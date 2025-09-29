@@ -1,0 +1,459 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>bananaGPT — rule-based чат-бот</title>
+    <style>
+        :root {
+            --bg: #0f1724;
+            --text: #ffffff;
+            --bubble-user: #2563eb;
+            --bubble-bot: #374151;
+            --header-bg: #1e293b;
+            --input-bg: #1e293b;
+            --border: #334155;
+        }
+
+        body.light {
+            --bg: #f9fafb;
+            --text: #000000;
+            --bubble-user: #60a5fa;
+            --bubble-bot: #e5e7eb;
+            --header-bg: #e5e7eb;
+            --input-bg: #f3f4f6;
+            --border: #d1d5db;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui,sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            background: var(--header-bg);
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .brand .logo {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #facc15;
+                font-size: 22px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+            }
+
+        #controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .theme-btn {
+            border: none;
+            background: transparent;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        #main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #chatList {
+            width: 220px;
+            background: var(--header-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+            #chatList button {
+                margin: 10px;
+                padding: 8px;
+                border: none;
+                border-radius: 6px;
+                background: #3b82f6;
+                color: #fff;
+                cursor: pointer;
+                font-size: 14px;
+            }
+
+        .chatItem {
+            padding: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            border-radius: 12px;
+            margin: 5px 10px;
+            background: var(--header-bg);
+            transition: transform 0.2s ease, background 0.2s ease;
+            position: relative;
+        }
+
+            .chatItem.active {
+                background: #2563eb;
+                color: #fff;
+            }
+
+            .chatItem:hover {
+                background: #374151;
+            }
+
+            .chatItem span {
+                flex: 1;
+                margin-left: 6px;
+            }
+
+            .chatItem input {
+                flex: 1;
+                margin-left: 6px;
+                border-radius: 4px;
+                border: 1px solid #3b82f6;
+                padding: 2px 4px;
+                background: var(--bg);
+                color: var(--text);
+            }
+
+        .optionsBtn {
+            background: transparent;
+            color: #fff;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .optionsMenu {
+            position: absolute;
+            right: 10px;
+            top: 40px;
+            background: var(--header-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            display: none;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+            .optionsMenu button {
+                border: none;
+                background: transparent;
+                color: var(--text);
+                padding: 5px 10px;
+                text-align: left;
+                cursor: pointer;
+            }
+
+        .chatBox {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #finishEditBtn {
+            display: none;
+            margin: 5px;
+            padding: 6px 10px;
+            border: none;
+            border-radius: 6px;
+            background: #22c55e;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        #chat {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .msg {
+            max-width: 70%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+
+        .user {
+            align-self: flex-end;
+            background: var(--bubble-user);
+            color: #fff;
+        }
+
+        .bot {
+            align-self: flex-start;
+            background: var(--bubble-bot);
+            color: var(--text);
+        }
+
+        #inputBar {
+            display: flex;
+            border-top: 1px solid var(--border);
+            background: var(--input-bg);
+            padding: 10px;
+            gap: 10px;
+        }
+
+        #msgInput {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        #sendBtn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            background: #22c55e;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .dragging {
+            opacity: 0.6;
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <div class="logo">🍌</div>
+            <div>
+                <div>bananaGPT</div>
+                <div style="font-size:12px;opacity:0.6">Rule-based in-browser assistant</div>
+            </div>
+        </div>
+        <div id="controls">
+            <button id="themeBtn" class="theme-btn" title="Переключить тему">🌙</button>
+        </div>
+    </header>
+
+    <div id="main">
+        <div id="chatList">
+            <button id="newChatBtn">+ Новый чат</button>
+        </div>
+        <div class="chatBox">
+            <button id="finishEditBtn">Закончить редактирование</button>
+            <div id="chat"></div>
+            <div id="inputBar">
+                <input id="msgInput" placeholder="Напишите сообщение..." />
+                <button id="sendBtn">Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <script>// --- Основные переменные ---
+        const chatList = document.getElementById("chatList");
+        const chatDiv = document.getElementById("chat");
+        const msgInput = document.getElementById("msgInput");
+        const sendBtn = document.getElementById("sendBtn");
+        const newChatBtn = document.getElementById("newChatBtn");
+        const themeBtn = document.getElementById("themeBtn");
+        const finishEditBtn = document.getElementById("finishEditBtn");
+
+        let chats = JSON.parse(localStorage.getItem("multiChats") || "[]");
+        let currentChatId = null;
+        let editingChat = null;
+
+        // --- Сохранение ---
+        function saveChats() { localStorage.setItem("multiChats", JSON.stringify(chats)); }
+
+        // --- Закрыть все меню опций ---
+        function closeAllMenus() { document.querySelectorAll(".optionsMenu").forEach(menu => menu.style.display = "none"); }
+        document.addEventListener("click", () => { closeAllMenus(); });
+
+        // --- Рендер списка чатов ---
+        function renderChatList() {
+            chatList.querySelectorAll(".chatItem").forEach(e => e.remove());
+            chats.forEach(c => {
+                const div = document.createElement("div");
+                div.className = "chatItem" + (c.id === currentChatId ? " active" : "");
+                div.innerHTML = `<span>🍌 ${c.name || c.id}</span><button class="optionsBtn">⋮</button>`;
+                const span = div.querySelector("span");
+                const optBtn = div.querySelector(".optionsBtn");
+
+                // Выбор чата
+                span.onclick = () => { currentChatId = c.id; renderChatList(); renderChat(); };
+
+                // Меню опций
+                const menu = document.createElement("div");
+                menu.className = "optionsMenu";
+                const editBtn = document.createElement("button"); editBtn.textContent = "Редактировать";
+                const delBtn = document.createElement("button"); delBtn.textContent = "Удалить";
+                menu.appendChild(editBtn); menu.appendChild(delBtn);
+                div.appendChild(menu);
+
+                optBtn.onclick = (e) => { e.stopPropagation(); closeAllMenus(); menu.style.display = menu.style.display === "flex" ? "none" : "flex"; };
+
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (confirm("Удалить чат навсегда?")) {
+                        chats = chats.filter(ch => ch.id !== c.id);
+                        if (currentChatId === c.id) currentChatId = null;
+                        saveChats();
+                        renderChatList();
+                        renderChat();
+                    }
+                };
+
+                editBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    editingChat = c;
+                    span.style.display = "none";
+                    const input = document.createElement("input");
+                    input.value = c.name || "";
+                    div.insertBefore(input, optBtn);
+                    input.focus();
+                    finishEditBtn.style.display = "inline-block";
+                    closeAllMenus();
+                };
+
+                chatList.appendChild(div);
+            });
+
+            enableDragDrop();
+        }
+
+        // --- Закончить редактирование ---
+        finishEditBtn.onclick = () => {
+            if (!editingChat) return;
+            const divs = chatList.querySelectorAll(".chatItem");
+            divs.forEach(div => {
+                const input = div.querySelector("input");
+                const span = div.querySelector("span");
+                if (input) {
+                    editingChat.name = input.value.trim() || "Новый чат";
+                    input.remove();
+                    span.style.display = "inline";
+                }
+            });
+            saveChats();
+            editingChat = null;
+            finishEditBtn.style.display = "none";
+            renderChatList();
+        };
+
+        // --- Рендер чата ---
+        function renderChat() {
+            chatDiv.innerHTML = "";
+            if (!currentChatId) return;
+            const c = chats.find(c => c.id === currentChatId);
+            if (!c) return;
+            c.history.forEach(m => {
+                const d = document.createElement("div");
+                d.className = "msg " + m.sender;
+                d.textContent = m.text;
+                chatDiv.appendChild(d);
+            });
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+
+        // --- Добавление сообщений ---
+        function addMsg(text, sender) {
+            if (!currentChatId) return;
+            const c = chats.find(c => c.id === currentChatId);
+            c.history.push({ text, sender });
+            saveChats();
+            const d = document.createElement("div"); d.className = "msg " + sender; d.textContent = text;
+            chatDiv.appendChild(d);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+
+        // --- Отправка сообщения ---
+        sendBtn.onclick = () => {
+            const t = msgInput.value.trim(); if (!t) return;
+            addMsg(t, "user");
+            botReply(t);
+            msgInput.value = "";
+        };
+
+        // --- Новый чат ---
+        newChatBtn.onclick = () => {
+            const id = "chat_" + Date.now();
+            chats.push({ id, name: "Новый чат", history: [] });
+            currentChatId = id;
+            saveChats();
+            renderChatList();
+            renderChat();
+        };
+
+        // --- Простейший бот ---
+        function botReply(userText) { addMsg("Бот отвечает на: " + userText, "bot"); }
+
+        // --- Тема ---
+        function setTheme(theme) {
+            if (theme === "light") { document.body.classList.add("light"); themeBtn.textContent = "☀️"; }
+            else { document.body.classList.remove("light"); themeBtn.textContent = "🌙"; }
+            localStorage.setItem("theme", theme);
+        }
+        themeBtn.onclick = () => { const current = document.body.classList.contains("light") ? "light" : "dark"; setTheme(current === "light" ? "dark" : "light"); };
+        setTheme(localStorage.getItem("theme") || "dark");
+
+        // --- Drag & Drop ---
+        let draggedChatId = null;
+        function enableDragDrop() {
+            const items = chatList.querySelectorAll(".chatItem");
+            items.forEach(item => {
+                item.draggable = true;
+                item.ondragstart = (e) => {
+                    draggedChatId = chats.find(c => c.name === item.querySelector("span").textContent)?.id;
+                    item.classList.add("dragging");
+                    e.dataTransfer.effectAllowed = "move";
+                };
+                item.ondragend = (e) => { item.classList.remove("dragging"); };
+                item.ondragover = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; };
+                item.ondrop = (e) => {
+                    e.preventDefault();
+                    if (!draggedChatId) return;
+                    const targetId = chats.find(c => c.name === item.querySelector("span").textContent)?.id;
+                    if (draggedChatId === targetId) return;
+                    const draggedIndex = chats.findIndex(c => c.id === draggedChatId);
+                    const targetIndex = chats.findIndex(c => c.id === targetId);
+                    const [dragged] = chats.splice(draggedIndex, 1);
+                    chats.splice(targetIndex, 0, dragged);
+                    saveChats(); renderChatList();
+                    draggedChatId = null;
+                };
+            });
+        }
+
+        // --- Инициализация ---
+        if (chats.length > 0) { currentChatId = chats[0].id; }
+        renderChatList();
+        renderChat();</script>
+</body>
+</html>
